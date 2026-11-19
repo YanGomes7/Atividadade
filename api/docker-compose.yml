@@ -1,0 +1,29 @@
+services:
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: loja
+      MYSQL_USER: app
+      MYSQL_PASSWORD: apppass
+    volumes:
+      - dbdata:/var/lib/mysql
+
+  api:
+    build: .
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_USER: app
+      DB_PASSWORD: apppass
+      DB_NAME: loja
+      # origem permitida (VM1). Definida pelo Ansible; '*' como padrão
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - "3000:3000"
+
+volumes:
+  dbdata:

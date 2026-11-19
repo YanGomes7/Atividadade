@@ -1,0 +1,60 @@
+---
+- name: Aguardar cloud-init (Docker instalado)
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Esperar conexão SSH
+      ansible.builtin.wait_for_connection:
+        timeout: 300
+    - name: Esperar cloud-init terminar
+      ansible.builtin.command: cloud-init status --wait
+      changed_when: false
+    - name: Garantir Docker ativo
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+- name: Implantar API + MySQL na VM2
+  hosts: vm2
+  become: true
+  tasks:
+    - name: Copiar diretório da API
+      ansible.builtin.copy:
+        src: ../api/
+        dest: /opt/api/
+    - name: Subir containers
+      ansible.builtin.command: docker compose up -d --build
+      args:
+        chdir: /opt/api
+      environment:
+        CORS_ORIGIN: "http://{{ vm1_ip }}"
+    - name: Aguardar API responder
+      ansible.builtin.uri:
+        url: "http://localhost:3000/produtos"
+      register: r
+      until: r.status == 200
+      retries: 40
+      delay: 5
+
+- name: Implantar aplicação web na VM1
+  hosts: vm1
+  become: true
+  tasks:
+    - name: Copiar aplicação web
+      ansible.builtin.copy:
+        src: ../app/
+        dest: /opt/app/
+    - name: Configurar URL da API (VM2)
+      ansible.builtin.copy:
+        dest: /opt/app/config.js
+        content: 'window.API_URL = "http://{{ vm2_ip }}:3000";'
+    - name: Construir imagem
+      ansible.builtin.command: docker build -t app-web /opt/app
+    - name: Remover container antigo
+      ansible.builtin.command: docker rm -f app-web
+      failed_when: false
+      changed_when: false
+    - name: Rodar container
+      ansible.builtin.command: docker run -d --restart always --name app-web -p 80:80 app-web
