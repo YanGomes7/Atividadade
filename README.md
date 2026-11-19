@@ -1,8 +1,8 @@
 # Avaliação Prática de DevOps — Cadastro de Produtos (Prova A)
 
 ## Integrantes do grupo
-- **NOME COMPLETO DO INTEGRANTE 1**
-- **NOME COMPLETO DO INTEGRANTE 2**
+- **GAbriel José De Lima Carvalho 22001435 1**
+- **Yan Gomes Aguiar De Almeida 23000825 2**
 - **NOME COMPLETO DO INTEGRANTE 3**
 
 ## Arquitetura
